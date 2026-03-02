@@ -10,6 +10,12 @@ load_dotenv()
 
 @dataclass(frozen=True)
 class Settings:
+    enable_local_auth: bool = os.getenv("ENABLE_LOCAL_AUTH", "true").strip().lower() == "true"
+    local_auth_username: str = os.getenv("LOCAL_AUTH_USERNAME", "admin")
+    local_auth_password: str = os.getenv("LOCAL_AUTH_PASSWORD", "admin123")
+    local_auth_session_hours: int = int(os.getenv("LOCAL_AUTH_SESSION_HOURS", "24"))
+    local_auth_cookie_name: str = os.getenv("LOCAL_AUTH_COOKIE_NAME", "video_auth_session")
+
     storage_connection_string: str = os.getenv("STORAGE_CONNECTION_STRING", "")
     raw_video_container: str = os.getenv("RAW_VIDEO_CONTAINER", "raw-videos")
     search_docs_container: str = os.getenv("SEARCH_DOCS_CONTAINER", "search-docs")

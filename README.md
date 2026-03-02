@@ -50,6 +50,13 @@ cp .env.example .env
 
 All variables from `src/config.py` are listed below:
 
+Local Auth (optional, enabled by default for PoC)
+- `ENABLE_LOCAL_AUTH` (default: `true`)
+- `LOCAL_AUTH_USERNAME` (default: `admin`)
+- `LOCAL_AUTH_PASSWORD` (default: `admin123`)
+- `LOCAL_AUTH_SESSION_HOURS` (default: `24`)
+- `LOCAL_AUTH_COOKIE_NAME` (default: `video_auth_session`)
+
 Storage (required)
 - `STORAGE_CONNECTION_STRING`
 - `RAW_VIDEO_CONTAINER` (default: `raw-videos`)
@@ -140,15 +147,21 @@ Manual admin endpoints:
 
 ### 3.1 Web UI
 
-1. In `Upload & Index`, select a video and click `Upload & Process`.
-2. After processing, select a target video in `Video Library` (or keep `All videos`).
-3. Enter a natural-language question in the top search box and click `Search`.
-4. Click any item in `Matched Segments`; the player jumps to the returned timestamp.
-5. View `Video Summary` on the right; open `OpenAI Chat Bot` on the left for grounded Q&A.
+1. Open `/login` and sign in with your configured local credentials.
+2. In `Upload & Index`, select a video and click `Upload & Process`.
+3. After processing, select a target video in `Video Library` (or keep `All videos`).
+4. Enter a natural-language question in the top search box and click `Search`.
+5. Click any item in `Matched Segments`; the player jumps to the returned timestamp.
+6. View `Video Summary` on the right; open `OpenAI Chat Bot` on the left for grounded Q&A.
+7. Use `Logout` in the sidebar to clear session and return to login page.
 
 ### 3.2 API Endpoints
 
 - `GET /`: frontend page
+- `GET /login`: local login page
+- `GET /auth/session`: current auth state
+- `POST /auth/login`: local login
+- `POST /auth/logout`: local logout
 - `GET /favicon.ico`: site icon
 - `GET /health`: service status + startup provision snapshot
 - `GET /ui-config`: UI runtime config

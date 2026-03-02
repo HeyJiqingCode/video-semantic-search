@@ -15,6 +15,12 @@ def index() -> FileResponse:
     return FileResponse("app/static/index.html")
 
 
+# Serve local login page when local auth is enabled.
+@router.get("/login")
+def login() -> FileResponse:
+    return FileResponse("app/static/login.html")
+
+
 # Serve site favicon.
 @router.get("/favicon.ico")
 def favicon() -> FileResponse:

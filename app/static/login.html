@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <title>Video Analysis Login</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+    :root {
+      --bg: #eef2f5;
+      --bg-deep: #e4e9ef;
+      --card: #ffffff;
+      --line: #dbe3eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #1f2937;
+      --primary-dark: #111827;
+      --error-bg: #fef2f2;
+      --error-border: #fecaca;
+      --error-text: #991b1b;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Manrope", sans-serif;
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      background:
+        radial-gradient(1200px 380px at 20% -10%, #dde8f3 0%, transparent 60%),
+        radial-gradient(900px 300px at 85% -20%, #e9eef4 0%, transparent 55%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+      padding: 24px;
+    }
+    .card {
+      width: min(420px, 100%);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 20px;
+      display: grid;
+      gap: 12px;
+      box-shadow: 0 16px 44px rgba(15, 23, 42, 0.08);
+    }
+    h1 {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 24px;
+      text-align: center;
+    }
+    .sub {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+    label {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    input {
+      width: 100%;
+      min-height: 42px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 8px 10px;
+      font-size: 14px;
+    }
+    button {
+      border: 0;
+      border-radius: 10px;
+      min-height: 42px;
+      padding: 0 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary);
+    }
+    button:hover { background: var(--primary-dark); }
+    button:disabled { opacity: 0.7; cursor: wait; }
+    .error {
+      min-height: 22px;
+      border: 1px solid transparent;
+      border-radius: 8px;
+      padding: 0;
+      font-size: 13px;
+      color: transparent;
+    }
+    .error.show {
+      padding: 8px 10px;
+      border-color: var(--error-border);
+      background: var(--error-bg);
+      color: var(--error-text);
+      min-height: auto;
+    }
+  </style>
+</head>
+<body>
+  <form class="card" id="loginForm">
+    <h1>Video Analysis</h1>
+    <div class="sub">Sign in to continue</div>
+
+    <div class="field">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" autocomplete="username" required />
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" autocomplete="current-password" required />
+    </div>
+
+    <div id="error" class="error"></div>
+    <button id="submitBtn" type="submit">Login</button>
+  </form>
+
+  <script>
+    const form = document.getElementById("loginForm");
+    const submitBtn = document.getElementById("submitBtn");
+    const errorEl = document.getElementById("error");
+    const usernameEl = document.getElementById("username");
+    const passwordEl = document.getElementById("password");
+
+    // Render or clear login error message.
+    function setError(text) {
+      if (!text) {
+        errorEl.textContent = "";
+        errorEl.classList.remove("show");
+        return;
+      }
+      errorEl.textContent = text;
+      errorEl.classList.add("show");
+    }
+
+    // Redirect to the main app page after successful sign-in check.
+    async function checkSession() {
+      try {
+        const resp = await fetch("/auth/session");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        if (data.authenticated) {
+          window.location.href = "/";
+        }
+      } catch (_) {
+        // keep login page on transient failures
+      }
+    }
+
+    // Submit login credentials and create backend session cookie.
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      setError("");
+      submitBtn.disabled = true;
+      try {
+        const resp = await fetch("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            username: usernameEl.value.trim(),
+            password: passwordEl.value
+          })
+        });
+        if (!resp.ok) {
+          let msg = "Login failed.";
+          try {
+            const data = await resp.json();
+            msg = data.detail || msg;
+          } catch (_) {}
+          throw new Error(msg);
+        }
+        window.location.href = "/";
+      } catch (err) {
+        setError(err.message || "Login failed.");
+      } finally {
+        submitBtn.disabled = false;
+      }
+    });
+
+    checkSession();
+  </script>
+</body>
+</html>

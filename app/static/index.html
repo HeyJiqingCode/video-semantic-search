@@ -55,12 +55,76 @@
       overflow-x: hidden;
     }
     .sidebar-top, .sidebar-bottom { display: grid; gap: 14px; }
-    .version {
+    .footer-row {
       margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding-top: 6px;
+    }
+    .version {
       font-size: 11px;
       color: #94a3b8;
       letter-spacing: 0.4px;
-      padding-top: 8px;
+      line-height: 1;
+    }
+    .logout-icon-btn {
+      width: 28px;
+      height: 28px;
+      min-height: 28px;
+      min-width: 28px;
+      border: 1px solid #dbe3eb;
+      border-radius: 8px;
+      background: #fff;
+      color: #475569;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0;
+      cursor: pointer;
+      transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+    }
+    .logout-wrap {
+      position: relative;
+      display: inline-flex;
+      align-items: center;
+    }
+    .logout-text {
+      position: absolute;
+      right: 34px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 11px;
+      font-weight: 700;
+      color: #b91c1c;
+      background: #fff1f2;
+      border: 1px solid #fecdd3;
+      border-radius: 999px;
+      padding: 2px 8px;
+      line-height: 1.2;
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+    }
+    .logout-icon-btn:hover {
+      background: #fef2f2;
+      border-color: #fca5a5;
+      color: #dc2626;
+    }
+    .logout-icon-btn:active {
+      background: #fee2e2;
+    }
+    .logout-wrap:hover .logout-text,
+    .logout-wrap:focus-within .logout-text {
+      opacity: 1;
+      transform: translate(-2px, -50%);
+    }
+    .logout-icon-btn svg {
+      width: 14px;
+      height: 14px;
+      display: block;
     }
     .sidebar-section { display: grid; gap: 8px; }
     .sidebar-divider {
@@ -555,7 +619,26 @@
             <div id="videoMeta" class="status-detail hidden"></div>
           </div>
         </section>
-        <div class="version">Version 0.0.1</div>
+        <div class="footer-row">
+          <div class="version">Version 0.0.1</div>
+          <div class="logout-wrap">
+            <span class="logout-text">Logout</span>
+            <button
+              id="btnLogout"
+              class="logout-icon-btn"
+              type="button"
+              title="Logout"
+              aria-label="Logout"
+            >
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M10 17l5-5-5-5" />
+                <path d="M15 12H3" />
+                <path d="M21 21H12a2 2 0 0 1-2-2v-3" />
+                <path d="M10 8V5a2 2 0 0 1 2-2h9" />
+              </svg>
+            </button>
+          </div>
+        </div>
       </div>
     </aside>
 
@@ -617,6 +700,7 @@
     const btnRebuild = document.getElementById("btnRebuild");
     const btnReloadVideos = document.getElementById("btnReloadVideos");
     const btnOpenChat = document.getElementById("btnOpenChat");
+    const btnLogout = document.getElementById("btnLogout");
     const btnSendChat = document.getElementById("btnSendChat");
     const btnCloseChat = document.getElementById("btnCloseChat");
     const videoSelect = document.getElementById("videoSelect");
@@ -806,9 +890,19 @@
       return { line, div };
     }
 
+    // Wrap fetch calls and redirect to login when backend returns 401.
+    async function fetchWithAuth(url, options = {}) {
+      const resp = await fetch(url, options);
+      if (resp.status === 401) {
+        window.location.href = "/login";
+        throw new Error("Unauthorized");
+      }
+      return resp;
+    }
+
     // Send a JSON POST request and return parsed JSON response.
     async function postJson(url, body) {
-      const resp = await fetch(url, {
+      const resp = await fetchWithAuth(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(body)
@@ -820,7 +914,7 @@
     // Load runtime UI config values from backend.
     async function loadUiConfig() {
       try {
-        const resp = await fetch("/ui-config");
+        const resp = await fetchWithAuth("/ui-config");
         if (!resp.ok) return;
         const data = await resp.json();
         const value = Number(data.search_jump_preroll_seconds);
@@ -841,7 +935,7 @@
       setSummaryMarkdown("Generating summary...");
       try {
         const url = `/video-summary?video_id=${encodeURIComponent(videoId)}${refresh ? "&refresh=true" : ""}`;
-        const resp = await fetch(url);
+        const resp = await fetchWithAuth(url);
         if (!resp.ok) throw new Error(await resp.text());
         const data = await resp.json();
         setSummaryMarkdown(data.summary || "No summary generated.");
@@ -852,7 +946,7 @@
 
     // Load indexed videos into dropdown and local map.
     async function loadVideos() {
-      const resp = await fetch("/videos");
+      const resp = await fetchWithAuth("/videos");
       if (!resp.ok) throw new Error(await resp.text());
       const data = await resp.json();
       const videos = data.videos || [];
@@ -897,7 +991,7 @@
         setStatus("Uploading and analyzing (depends on video length)...", "info");
         const form = new FormData();
         form.append("file", file);
-        const resp = await fetch("/pipeline/upload-and-process", { method: "POST", body: form });
+        const resp = await fetchWithAuth("/pipeline/upload-and-process", { method: "POST", body: form });
         if (!resp.ok) throw new Error(await resp.text());
         const data = await resp.json();
         currentVideoUrl = data.video_url || "";
@@ -1012,7 +1106,7 @@
       let fullText = "";
       try {
         setStatus("Streaming response...", "info");
-        const resp = await fetch("/chat/stream", {
+        const resp = await fetchWithAuth("/chat/stream", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ video_id: vid, message }),
@@ -1105,6 +1199,17 @@
         setStatus(`Loaded ${n} indexed videos`);
       } catch (e) {
         setStatus(`Load videos failed: ${e.message}`);
+      }
+    };
+
+    // Clear local auth session and return to login page.
+    btnLogout.onclick = async () => {
+      try {
+        await fetchWithAuth("/auth/logout", { method: "POST" });
+      } catch (_) {
+        // always navigate to login even if request fails
+      } finally {
+        window.location.href = "/login";
       }
     };
 
