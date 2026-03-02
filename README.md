@@ -3,6 +3,9 @@
 A video semantic search application built on Azure Content Understanding and Azure AI Search.  
 The goal is to map natural-language questions directly to video timestamps and support one-click playback jump.
 
+![Video Analysis UI - Screenshot 1](assets/image-1.png)
+![Video Analysis UI - Screenshot 2](assets/image-2.png)
+
 ## 1. Overview
 
 ### 1.1 Pipeline
