@@ -1,0 +1,1138 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" type="image/svg+xml" href="/static/favicon.svg" />
+  <title>Video Analysis</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Space+Grotesk:wght@500;700&display=swap");
+    :root {
+      --bg: #eef2f5;
+      --bg-deep: #e4e9ef;
+      --panel: #f6f8fb;
+      --card: #ffffff;
+      --line: #dbe3eb;
+      --text: #111827;
+      --muted: #6b7280;
+      --primary: #1f2937;
+      --primary-dark: #111827;
+      --accent: #2563eb;
+      --ok: #16a34a;
+      --warn: #ca8a04;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Manrope", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(1200px 380px at 20% -10%, #dde8f3 0%, transparent 60%),
+        radial-gradient(900px 300px at 85% -20%, #e9eef4 0%, transparent 55%),
+        linear-gradient(180deg, var(--bg) 0%, var(--bg-deep) 100%);
+      height: 100vh;
+      overflow: hidden;
+    }
+    .layout {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      height: 100vh;
+    }
+    .sidebar {
+      border-right: 1px solid var(--line);
+      background: rgba(248, 252, 255, 0.75);
+      backdrop-filter: blur(6px);
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 14px;
+      height: 100vh;
+      width: 250px;
+      min-width: 250px;
+      max-width: 250px;
+      overflow-y: auto;
+      overflow-x: hidden;
+    }
+    .sidebar-top, .sidebar-bottom { display: grid; gap: 14px; }
+    .version {
+      margin-top: auto;
+      font-size: 11px;
+      color: #94a3b8;
+      letter-spacing: 0.4px;
+      padding-top: 8px;
+    }
+    .sidebar-section { display: grid; gap: 8px; }
+    .sidebar-divider {
+      border: 0;
+      border-top: 1px solid var(--line);
+      margin: 2px 0;
+    }
+    .brand {
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 22px;
+      font-weight: 700;
+      letter-spacing: 0.4px;
+      margin-bottom: 14px;
+      text-align: center;
+    }
+    .group-title {
+      font-size: 12px;
+      color: var(--muted);
+      margin: 16px 0 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      font-weight: 800;
+    }
+    .stack { display: grid; gap: 8px; }
+    .upload-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      padding: 8px;
+      display: grid;
+      gap: 8px;
+    }
+    .file-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      min-width: 0;
+    }
+    .file-name {
+      flex: 1 1 auto;
+      min-width: 0;
+      max-width: 100%;
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    #btnPick { flex: 0 0 auto; }
+    .main {
+      padding: 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      height: 100vh;
+      overflow-y: auto;
+      min-width: 0;
+    }
+    .toolbar {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      align-items: center;
+    }
+    .toolbar-left { display: grid; grid-template-columns: 1fr auto; gap: 8px; align-items: center; }
+    .top-grid {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 14px;
+      align-items: start;
+    }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+    }
+    .summary-card { display: flex; flex-direction: column; min-height: 0; }
+    .card h3 {
+      margin: 0 0 8px;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 16px;
+    }
+    .video-wrap {
+      overflow: hidden;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      background: #000;
+    }
+    video {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      display: block;
+      background: #000;
+    }
+    .analysis-list { display: grid; gap: 10px; }
+    .metric {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--panel);
+    }
+    .metric .k { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+    .metric .v { font-weight: 700; font-size: 15px; }
+    .summary-box {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 10px;
+      background: var(--panel);
+      font-size: 13px;
+      line-height: 1.5;
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow-y: auto;
+      overflow-wrap: anywhere;
+      color: #1f2937;
+    }
+    .markdown-body p { margin: 0 0 8px; }
+    .markdown-body p:last-child { margin-bottom: 0; }
+    .markdown-body ul, .markdown-body ol { margin: 0 0 8px 18px; padding: 0; }
+    .markdown-body li { margin: 2px 0; }
+    .markdown-body code {
+      background: #e6edf5;
+      border: 1px solid #d0d9e5;
+      border-radius: 6px;
+      padding: 1px 5px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 12px;
+    }
+    .status {
+      font-size: 13px;
+      color: #334155;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid #d1d9e6;
+      background: #f8fbff;
+      font-weight: 600;
+      line-height: 1.4;
+      min-width: 0;
+      max-width: 100%;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+      white-space: normal;
+    }
+    .status-panel {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+      min-width: 0;
+      max-width: 100%;
+    }
+    .status-detail {
+      font-size: 12px;
+      color: var(--muted);
+      line-height: 1.4;
+      min-width: 0;
+      max-width: 100%;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .hidden { display: none !important; }
+    .status.error {
+      color: #991b1b;
+      border-color: #fecaca;
+      background: #fef2f2;
+    }
+    .status.success {
+      color: #166534;
+      border-color: #bbf7d0;
+      background: #f0fdf4;
+    }
+    .status.info {
+      color: #1e3a8a;
+      border-color: #bfdbfe;
+      background: #eff6ff;
+    }
+    .results-card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 12px;
+      min-height: 0;
+      height: auto;
+      flex-shrink: 0;
+    }
+    .results-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+    .results-head h3 {
+      margin: 0;
+      font-family: "Space Grotesk", sans-serif;
+      font-size: 18px;
+    }
+    #results {
+      display: grid;
+      gap: 10px;
+      max-height: none;
+      overflow: visible;
+      padding-right: 2px;
+    }
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 10px;
+      background: #fff;
+    }
+    .meta {
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .score {
+      font-weight: 800;
+      border-radius: 999px;
+      padding: 2px 8px;
+      display: inline-block;
+      border: 1px solid transparent;
+    }
+    .score.top1 {
+      color: #ffffff;
+      background: #166534;
+      border-color: #14532d;
+    }
+    .score.top2 {
+      color: #ffffff;
+      background: #22c55e;
+      border-color: #16a34a;
+    }
+    .score.top3 {
+      color: #14532d;
+      background: #bbf7d0;
+      border-color: #86efac;
+    }
+    .content {
+      font-size: 13px;
+      line-height: 1.45;
+      color: #1f2937;
+      overflow-wrap: anywhere;
+      word-break: break-word;
+    }
+    .actions { margin-top: 8px; display: flex; gap: 8px; }
+    .chat-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 1000;
+    }
+    .chat-dialog {
+      width: min(760px, 100%);
+      height: min(85vh, 760px);
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 12px;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      gap: 10px;
+      box-shadow: 0 24px 72px rgba(2, 6, 23, 0.24);
+    }
+    .chat-messages {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      min-height: 0;
+      max-height: none;
+      height: 100%;
+      overflow: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .chat-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    .chat-line.pending { display: none; }
+    .chat-line.assistant { justify-content: flex-start; }
+    .chat-line.user {
+      justify-content: flex-start;
+      flex-direction: row-reverse;
+    }
+    .chat-avatar {
+      width: 30px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1px solid #dbe3eb;
+      flex: 0 0 30px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      line-height: 1;
+      user-select: none;
+    }
+    .chat-avatar.user {
+      background: #e2e8f0;
+      color: #334155;
+      border-color: #cbd5e1;
+    }
+    .chat-avatar.assistant {
+      background: #dbeafe;
+      color: #1d4ed8;
+      border-color: #93c5fd;
+    }
+    .chat-item {
+      border-radius: 8px;
+      padding: 8px 10px;
+      font-size: 13px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      max-width: min(78%, calc(100% - 42px));
+    }
+    .chat-item.user {
+      background: #e5edf8;
+      border: 1px solid #c9d9ee;
+    }
+    .chat-item.assistant {
+      background: #f4f7fb;
+      border: 1px solid #dbe3eb;
+    }
+    .chat-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+    }
+    input[type="text"] {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+    }
+    input[type="file"] { display: none; }
+    button {
+      border: 0;
+      border-radius: 10px;
+      min-height: 40px;
+      padding: 0 14px;
+      font-weight: 700;
+      cursor: pointer;
+      color: #fff;
+      background: var(--primary);
+    }
+    button:hover { background: var(--primary-dark); }
+    .secondary { background: #334155; }
+    .ghost {
+      background: #fff;
+      color: var(--text);
+      border: 1px solid var(--line);
+    }
+    .ghost:hover {
+      background: #f3f6fa;
+      color: var(--text);
+    }
+    .ghost:active {
+      background: #eaf0f6;
+      color: var(--text);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--muted);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 4px 10px;
+      background: #fff;
+    }
+    .ok-dot, .warn-dot {
+      width: 8px; height: 8px; border-radius: 999px; display: inline-block;
+    }
+    .ok-dot { background: var(--ok); }
+    .warn-dot { background: var(--warn); }
+    .small { font-size: 12px; color: var(--muted); }
+    #chatMeta {
+      font-size: 12px;
+      font-weight: 800;
+      color: #1d4ed8;
+      background: #dbeafe;
+      border: 1px solid #93c5fd;
+      border-radius: 999px;
+      padding: 4px 10px;
+      line-height: 1;
+      display: inline-flex;
+      align-items: center;
+      max-width: 420px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    select {
+      width: 100%;
+      min-height: 40px;
+      padding: 8px 10px;
+      padding-right: 34px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      color: var(--text);
+      appearance: none;
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, #64748b 50%),
+        linear-gradient(135deg, #64748b 50%, transparent 50%);
+      background-position:
+        calc(100% - 16px) calc(50% - 2px),
+        calc(100% - 11px) calc(50% - 2px);
+      background-size: 5px 5px, 5px 5px;
+      background-repeat: no-repeat;
+    }
+    @media (max-width: 1100px) {
+      body, .layout, .sidebar, .main { height: auto; overflow: visible; }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { border-right: 0; border-bottom: 1px solid var(--line); }
+      .top-grid { grid-template-columns: 1fr; }
+      .toolbar { grid-template-columns: 1fr; }
+      .toolbar-left { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="brand">Video Analysis</div>
+
+        <section class="sidebar-section">
+          <div class="group-title">Upload & Index</div>
+          <div class="stack">
+            <div class="upload-box">
+              <input id="file" type="file" accept="video/*" />
+              <div class="file-row">
+                <button id="btnPick" class="ghost" type="button">Choose File</button>
+                <div class="file-name" id="fileName">No file selected</div>
+              </div>
+              <button id="btnUpload">Upload & Process</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="sidebar-section">
+          <div class="group-title">Video Library</div>
+          <div class="stack">
+            <select id="videoSelect">
+              <option value="">All videos</option>
+            </select>
+            <button id="btnReloadVideos" type="button">Reload Videos</button>
+            <button id="btnRebuild" type="button">Rebuild Index</button>
+          </div>
+        </section>
+
+        <section class="sidebar-section">
+          <div class="group-title">Chat with Video</div>
+          <div class="stack">
+            <button id="btnOpenChat" type="button">OpenAI Chat Bot</button>
+          </div>
+        </section>
+      </div>
+
+      <div class="sidebar-bottom">
+        <section class="sidebar-section hidden" id="statusSection">
+          <div class="status-panel">
+            <div id="status" class="status info"></div>
+            <div id="videoMeta" class="status-detail hidden"></div>
+          </div>
+        </section>
+        <div class="version">Version 0.0.1</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <div class="toolbar">
+        <div class="toolbar-left">
+          <input id="query" type="text" placeholder="Search video content, e.g. how to troubleshoot grid connection failure?" />
+          <button id="btnSearch">Search</button>
+        </div>
+      </div>
+
+      <section class="top-grid">
+        <div class="card">
+          <div class="video-wrap">
+            <video id="player" controls></video>
+          </div>
+        </div>
+
+        <div class="card summary-card" id="summaryCard">
+          <h3>Video Summary</h3>
+          <div id="videoSummary" class="summary-box markdown-body">Select a video to generate summary.</div>
+        </div>
+      </section>
+
+      <section class="results-card">
+        <div class="results-head">
+          <h3>Matched Segments</h3>
+          <div class="small" id="searchMeta"></div>
+        </div>
+        <div id="results"></div>
+      </section>
+
+    </main>
+  </div>
+
+  <div id="chatModal" class="chat-modal hidden" role="dialog" aria-modal="true" aria-label="OpenAI Chat Bot">
+    <section class="chat-dialog">
+      <div class="results-head">
+        <h3>OpenAI Chat Bot</h3>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div class="small" id="chatMeta"></div>
+          <button id="btnCloseChat" class="ghost" type="button">Close</button>
+        </div>
+      </div>
+      <div id="chatMessages" class="chat-messages"></div>
+      <div class="chat-row">
+        <input id="chatInput" type="text" placeholder="Ask a question about the selected video..." />
+        <button id="btnSendChat" type="button">Send</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("file");
+    const fileNameEl = document.getElementById("fileName");
+    const btnPick = document.getElementById("btnPick");
+    const btnUpload = document.getElementById("btnUpload");
+    const btnSearch = document.getElementById("btnSearch");
+    const btnRebuild = document.getElementById("btnRebuild");
+    const btnReloadVideos = document.getElementById("btnReloadVideos");
+    const btnOpenChat = document.getElementById("btnOpenChat");
+    const btnSendChat = document.getElementById("btnSendChat");
+    const btnCloseChat = document.getElementById("btnCloseChat");
+    const videoSelect = document.getElementById("videoSelect");
+    const statusEl = document.getElementById("status");
+    const statusSection = document.getElementById("statusSection");
+    const videoMeta = document.getElementById("videoMeta");
+    const searchMeta = document.getElementById("searchMeta");
+    const videoSummaryEl = document.getElementById("videoSummary");
+    const summaryCard = document.getElementById("summaryCard");
+    const resultsEl = document.getElementById("results");
+    const queryEl = document.getElementById("query");
+    const player = document.getElementById("player");
+    const chatModal = document.getElementById("chatModal");
+    const chatMessages = document.getElementById("chatMessages");
+    const chatInput = document.getElementById("chatInput");
+    const chatMeta = document.getElementById("chatMeta");
+
+    let currentVideoUrl = "";
+    let videoMap = {};
+    let searchJumpPrerollSeconds = 0;
+    const chatHistoryByVideo = new Map();
+    let activeChatVideoId = "";
+
+    // Show the chat modal.
+    function openChatModal() {
+      chatModal.classList.remove("hidden");
+    }
+
+    // Hide the chat modal after persisting current chat state.
+    function closeChatModal() {
+      persistActiveChatHistory();
+      chatModal.classList.add("hidden");
+    }
+    // Persist current video chat history HTML snapshot.
+    function persistActiveChatHistory() {
+      if (!activeChatVideoId) return;
+      const html = chatMessages.innerHTML || "";
+      if (html.trim()) {
+        chatHistoryByVideo.set(activeChatVideoId, html);
+      } else {
+        chatHistoryByVideo.delete(activeChatVideoId);
+      }
+    }
+    // Switch chat panel to the selected video's cached conversation.
+    function switchChatContext(videoId) {
+      persistActiveChatHistory();
+      activeChatVideoId = videoId || "";
+      if (!activeChatVideoId) {
+        chatMessages.innerHTML = "";
+        return;
+      }
+      chatMessages.innerHTML = chatHistoryByVideo.get(activeChatVideoId) || "";
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    // Render highlighted chat meta tag for selected video state.
+    function setChatMeta(text, emphasized = false) {
+      chatMeta.textContent = text;
+      chatMeta.style.background = emphasized ? "#dbeafe" : "#fef2f2";
+      chatMeta.style.borderColor = emphasized ? "#93c5fd" : "#fecaca";
+      chatMeta.style.color = emphasized ? "#1d4ed8" : "#b91c1c";
+    }
+
+    // Show status text with contextual style.
+    function setStatus(text, level = "info") {
+      statusSection.classList.remove("hidden");
+      statusEl.textContent = `Status: ${text}`;
+      statusEl.classList.remove("info", "success", "error");
+      statusEl.classList.add(level);
+    }
+
+    // Escape HTML special characters for safe rendering.
+    function escapeHtml(text) {
+      return String(text || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    // Convert a small markdown subset into HTML for UI display.
+    function renderMarkdownToHtml(md) {
+      const escaped = escapeHtml(md).replace(/\r\n/g, "\n");
+      const lines = escaped.split("\n");
+      const out = [];
+      let inUl = false;
+      let inOl = false;
+
+      // Close any currently open list block.
+      const closeLists = () => {
+        if (inUl) { out.push("</ul>"); inUl = false; }
+        if (inOl) { out.push("</ol>"); inOl = false; }
+      };
+
+      // Apply inline markdown formatting rules.
+      const formatInline = (s) => {
+        let x = s;
+        x = x.replace(/`([^`]+)`/g, "<code>$1</code>");
+        x = x.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        x = x.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+        return x;
+      };
+
+      for (const raw of lines) {
+        const line = raw.trim();
+        if (!line) {
+          closeLists();
+          continue;
+        }
+        const ul = line.match(/^[-*]\s+(.*)$/);
+        if (ul) {
+          if (!inUl) { closeLists(); out.push("<ul>"); inUl = true; }
+          out.push(`<li>${formatInline(ul[1])}</li>`);
+          continue;
+        }
+        const ol = line.match(/^\d+\.\s+(.*)$/);
+        if (ol) {
+          if (!inOl) { closeLists(); out.push("<ol>"); inOl = true; }
+          out.push(`<li>${formatInline(ol[1])}</li>`);
+          continue;
+        }
+        closeLists();
+        out.push(`<p>${formatInline(line)}</p>`);
+      }
+      closeLists();
+      return out.join("");
+    }
+
+    // Render summary markdown into the summary panel.
+    function setSummaryMarkdown(text) {
+      videoSummaryEl.innerHTML = renderMarkdownToHtml(text);
+    }
+
+    // Keep summary card height aligned with video card height.
+    function syncSummaryHeight() {
+      if (!player || !videoSummaryEl || !summaryCard) return;
+      const videoCard = player.closest(".card");
+      if (!videoCard) return;
+      const target = videoCard.clientHeight || 0;
+      if (!target) return;
+      // Keep the whole summary card equal to player card height.
+      summaryCard.style.height = `${target}px`;
+      videoSummaryEl.style.height = "auto";
+    }
+
+    // Format milliseconds into mm:ss.
+    function msToTime(ms) {
+      const total = Math.floor(ms / 1000);
+      const m = Math.floor(total / 60);
+      const s = total % 60;
+      return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+    }
+
+    // Read currently selected video id from dropdown.
+    function currentVideoId() {
+      return videoSelect.value || "";
+    }
+    // Clear search input and matched segment list state.
+    function clearSearchState() {
+      queryEl.value = "";
+      resultsEl.innerHTML = "";
+      searchMeta.textContent = "";
+    }
+
+    // Append one user/assistant message bubble to chat panel.
+    function appendChat(role, text, markdown = false, hiddenUntilContent = false) {
+      const line = document.createElement("div");
+      line.className = `chat-line ${role}`;
+      if (hiddenUntilContent && !(text || "").trim()) {
+        line.classList.add("pending");
+      }
+
+      const avatar = document.createElement("div");
+      avatar.className = `chat-avatar ${role}`;
+      avatar.textContent = role === "assistant" ? "🤖" : "👤";
+
+      const div = document.createElement("div");
+      div.className = `chat-item ${role}`;
+      if (markdown) {
+        div.classList.add("markdown-body");
+        div.innerHTML = renderMarkdownToHtml(text || "");
+      } else {
+        div.textContent = text || "";
+      }
+      line.appendChild(avatar);
+      line.appendChild(div);
+      chatMessages.appendChild(line);
+      chatMessages.scrollTop = chatMessages.scrollHeight;
+      return { line, div };
+    }
+
+    // Send a JSON POST request and return parsed JSON response.
+    async function postJson(url, body) {
+      const resp = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body)
+      });
+      if (!resp.ok) throw new Error(await resp.text());
+      return await resp.json();
+    }
+
+    // Load runtime UI config values from backend.
+    async function loadUiConfig() {
+      try {
+        const resp = await fetch("/ui-config");
+        if (!resp.ok) return;
+        const data = await resp.json();
+        const value = Number(data.search_jump_preroll_seconds);
+        if (Number.isFinite(value)) {
+          searchJumpPrerollSeconds = Math.max(0, value);
+        }
+      } catch (_) {
+        // keep default
+      }
+    }
+
+    // Load or refresh summary for one video.
+    async function loadSummary(videoId, refresh = false) {
+      if (!videoId) {
+        setSummaryMarkdown("Select a video to generate summary.");
+        return;
+      }
+      setSummaryMarkdown("Generating summary...");
+      try {
+        const url = `/video-summary?video_id=${encodeURIComponent(videoId)}${refresh ? "&refresh=true" : ""}`;
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+        setSummaryMarkdown(data.summary || "No summary generated.");
+      } catch (e) {
+        setSummaryMarkdown(`Summary failed: ${e.message}`);
+      }
+    }
+
+    // Load indexed videos into dropdown and local map.
+    async function loadVideos() {
+      const resp = await fetch("/videos");
+      if (!resp.ok) throw new Error(await resp.text());
+      const data = await resp.json();
+      const videos = data.videos || [];
+      videoMap = {};
+      videoSelect.innerHTML = '<option value="">All videos</option>';
+      for (const v of videos) {
+        videoMap[v.video_id] = v;
+        const opt = document.createElement("option");
+        opt.value = v.video_id;
+        opt.textContent = v.video_id;
+        videoSelect.appendChild(opt);
+      }
+      return videos.length;
+    }
+
+    // Parse complete NDJSON lines from buffer and invoke callback per line.
+    function processNdjsonBuffer(buffer, onLine) {
+      let rest = buffer;
+      let idx = rest.indexOf("\n");
+      while (idx >= 0) {
+        const line = rest.slice(0, idx).trim();
+        rest = rest.slice(idx + 1);
+        if (line) onLine(line);
+        idx = rest.indexOf("\n");
+      }
+      return rest;
+    }
+
+    // Open native file picker when user clicks the custom file button.
+    btnPick.onclick = () => fileInput.click();
+    // Refresh selected file name text when file input changes.
+    fileInput.addEventListener("change", () => {
+      const f = fileInput.files && fileInput.files[0];
+      fileNameEl.textContent = f ? f.name : "No file selected";
+    });
+
+    // Upload selected video, run backend processing, then refresh UI state.
+    btnUpload.onclick = async () => {
+      const file = fileInput.files[0];
+      if (!file) return setStatus("Please choose a video file");
+      try {
+        setStatus("Uploading and analyzing (depends on video length)...", "info");
+        const form = new FormData();
+        form.append("file", file);
+        const resp = await fetch("/pipeline/upload-and-process", { method: "POST", body: form });
+        if (!resp.ok) throw new Error(await resp.text());
+        const data = await resp.json();
+        currentVideoUrl = data.video_url || "";
+        if (currentVideoUrl) player.src = currentVideoUrl;
+        clearSearchState();
+        await loadVideos();
+        if (data.video_id) {
+          videoSelect.value = data.video_id;
+          await loadSummary(data.video_id, true);
+        }
+        syncSummaryHeight();
+        videoMeta.textContent = `video_id=${data.video_id || "-"} | chunks=${data.chunk_count || 0} | status=${data.status}`;
+        videoMeta.classList.remove("hidden");
+        setStatus("Processing completed, ready to search", "success");
+      } catch (e) {
+        setStatus(`Processing failed: ${e.message}`, "error");
+      }
+    };
+
+    // Run segment search against the selected video scope.
+    btnSearch.onclick = async () => {
+      const query = queryEl.value.trim();
+      if (!query) return;
+      try {
+        setStatus("Searching...", "info");
+        resultsEl.innerHTML = "";
+        const selectedVideo = currentVideoId() || null;
+        const data = await postJson("/search", { query, top: 3, video_id: selectedVideo });
+        searchMeta.textContent = `confidence=${Number(data.confidence || 0).toFixed(3)}`;
+        const results = data.results || [];
+        if (!results.length) {
+          resultsEl.innerHTML = "<div class='item'>No matched segments</div>";
+          setStatus("Search completed (no results)", "info");
+          return;
+        }
+        // Normalize score value used for rank coloring.
+        const scoreOf = (r) => Number(r.reranker_score || r.score || 0);
+        const ranked = [...results].sort((a, b) => scoreOf(b) - scoreOf(a));
+        const classMap = new Map(ranked.slice(0, 3).map((r, i) => [r.chunk_id, `top${i + 1}`]));
+
+        for (const r of results) {
+          const div = document.createElement("div");
+          div.className = "item";
+          const start = Number(r.start_ms || 0);
+          const jumpStart = Number(r.jump_start_ms ?? r.start_ms ?? 0);
+          const end = Number(r.end_ms || 0);
+          const score = scoreOf(r);
+          const scoreClass = classMap.get(r.chunk_id) || "top3";
+          div.innerHTML = `
+            <div class="meta">video=${r.video_id} | ${msToTime(start)} - ${msToTime(end)} | <span class="score ${scoreClass}">score=${score.toFixed(3)}</span></div>
+            <div class="content">${(r.content || "").slice(0, 260)}...</div>
+            <div class="actions">
+              <button class="ghost">Jump to Time</button>
+            </div>
+          `;
+          const btn = div.querySelector("button");
+          // Jump player to the refined segment start and auto-play.
+          btn.onclick = () => {
+            const url = r.video_url || currentVideoUrl;
+            if (url && player.src !== url) player.src = url;
+            player.currentTime = Math.max(0, jumpStart / 1000 - searchJumpPrerollSeconds);
+            player.play().catch(() => {});
+          };
+          resultsEl.appendChild(div);
+        }
+        setStatus("Search completed", "success");
+      } catch (e) {
+        setStatus(`Search failed: ${e.message}`, "error");
+      }
+    };
+
+    // Rebuild search resources and refresh video library list.
+    btnRebuild.onclick = async () => {
+      try {
+        setStatus("Rebuilding search index...", "info");
+        await postJson("/admin/rebuild", {});
+        const n = await loadVideos();
+        setSummaryMarkdown("Select a video to generate summary.");
+        setStatus(`Rebuild completed. Loaded ${n} indexed videos`, "success");
+      } catch (e) {
+        setStatus(`Rebuild failed: ${e.message}`, "error");
+      }
+    };
+
+    // Open chat modal and sync it with currently selected video context.
+    btnOpenChat.onclick = async () => {
+      openChatModal();
+      const vid = currentVideoId();
+      setChatMeta(vid ? `video_id=${vid}` : "Please select a video", Boolean(vid));
+      switchChatContext(vid);
+      if (vid) await loadSummary(vid);
+    };
+    // Close chat modal when close button is clicked.
+    btnCloseChat.onclick = () => closeChatModal();
+    // Close modal when user clicks outside the dialog panel.
+    chatModal.addEventListener("click", (e) => {
+      if (e.target === chatModal) closeChatModal();
+    });
+
+    // Stream chat response and render deltas incrementally.
+    btnSendChat.onclick = async () => {
+      const vid = currentVideoId();
+      const message = chatInput.value.trim();
+      if (!vid) return setStatus("Please select a video in Video Library", "info");
+      if (!message) return;
+      if (activeChatVideoId !== vid) {
+        switchChatContext(vid);
+      }
+      appendChat("user", message);
+      chatInput.value = "";
+      const { line: assistantLine, div: assistantDiv } = appendChat("assistant", "", false, true);
+      let fullText = "";
+      try {
+        setStatus("Streaming response...", "info");
+        const resp = await fetch("/chat/stream", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ video_id: vid, message }),
+        });
+        if (!resp.ok || !resp.body) throw new Error(await resp.text());
+
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = "";
+        // Decode one NDJSON event line from server stream.
+        const handleStreamLine = (line) => {
+          const msg = JSON.parse(line);
+          if (msg.type === "delta") {
+            fullText += msg.text || "";
+            if (assistantLine.classList.contains("pending")) {
+              assistantLine.classList.remove("pending");
+            }
+            assistantDiv.textContent = fullText;
+            chatMessages.scrollTop = chatMessages.scrollHeight;
+          } else if (msg.type === "error") {
+            throw new Error(msg.message || "stream error");
+          }
+        };
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            buffer = processNdjsonBuffer(buffer, handleStreamLine);
+            if (buffer.trim()) handleStreamLine(buffer.trim());
+            break;
+          }
+          buffer += decoder.decode(value, { stream: true });
+          buffer = processNdjsonBuffer(buffer, handleStreamLine);
+        }
+        if (assistantLine.classList.contains("pending")) {
+          assistantLine.classList.remove("pending");
+        }
+        assistantDiv.classList.add("markdown-body");
+        assistantDiv.innerHTML = renderMarkdownToHtml(fullText || "(empty response)");
+        persistActiveChatHistory();
+        setStatus("Chat response received", "success");
+      } catch (e) {
+        if (assistantLine.classList.contains("pending")) {
+          assistantLine.classList.remove("pending");
+        }
+        assistantDiv.classList.add("markdown-body");
+        assistantDiv.innerHTML = renderMarkdownToHtml(`Error: ${e.message}`);
+        persistActiveChatHistory();
+        setStatus(`Chat failed: ${e.message}`, "error");
+      }
+    };
+
+    // Submit search when Enter is pressed in query input.
+    queryEl.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btnSearch.click();
+    });
+    // Submit chat when Enter is pressed in chat input.
+    chatInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btnSendChat.click();
+    });
+    // Close chat modal with Escape key.
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !chatModal.classList.contains("hidden")) closeChatModal();
+    });
+
+    // Switch active video context and refresh player/summary/chat state.
+    videoSelect.addEventListener("change", async () => {
+      clearSearchState();
+      const vid = currentVideoId();
+      if (!vid) {
+        setSummaryMarkdown("Select a video to generate summary.");
+        setChatMeta("Please select a video", false);
+        switchChatContext("");
+        return;
+      }
+      const info = videoMap[vid];
+      if (info && info.video_url) {
+        currentVideoUrl = info.video_url;
+        player.src = info.video_url;
+      }
+      setChatMeta(`video_id=${vid}`, true);
+      switchChatContext(vid);
+      await loadSummary(vid);
+      syncSummaryHeight();
+    });
+
+    // Reload indexed video list from backend.
+    btnReloadVideos.onclick = async () => {
+      try {
+        const n = await loadVideos();
+        setStatus(`Loaded ${n} indexed videos`);
+      } catch (e) {
+        setStatus(`Load videos failed: ${e.message}`);
+      }
+    };
+
+    // Initialize UI config, preload videos, and prepare initial summary/player state.
+    (async () => {
+      try {
+        await loadUiConfig();
+        const count = await loadVideos();
+        if (count > 0) {
+          const first = videoSelect.options[1];
+          if (first && first.value) {
+            videoSelect.value = first.value;
+            const info = videoMap[first.value];
+            if (info && info.video_url) {
+              currentVideoUrl = info.video_url;
+              player.src = info.video_url;
+            }
+            await loadSummary(first.value);
+          }
+        }
+        syncSummaryHeight();
+      } catch (_) {
+        // keep UI silent on initial load
+      }
+    })();
+
+    // Keep summary panel height synced on viewport resize.
+    window.addEventListener("resize", syncSummaryHeight);
+  </script>
+</body>
+</html>
